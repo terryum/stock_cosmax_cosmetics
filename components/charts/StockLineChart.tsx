@@ -4,12 +4,11 @@ import { useMemo } from 'react';
 import { Box, Typography, Skeleton, useTheme } from '@mui/material';
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
   ReferenceLine,
 } from 'recharts';
 import { DailyPrice, Ticker } from '@/types';
@@ -20,17 +19,8 @@ interface StockLineChartProps {
   comparisonData?: { ticker: Ticker; data: DailyPrice[] }[];
   ticker: Ticker;
   isLoading?: boolean;
-  isRebaseMode?: boolean; // 수익률 비교 모드
+  isRebaseMode?: boolean;
 }
-
-// 차트 색상 팔레트
-const CHART_COLORS = [
-  '#1565c0', // Primary
-  '#00897b', // Secondary
-  '#f57c00', // Orange
-  '#7b1fa2', // Purple
-  '#c62828', // Red
-];
 
 export function StockLineChart({
   data,
@@ -41,61 +31,58 @@ export function StockLineChart({
 }: StockLineChartProps) {
   const theme = useTheme();
 
-  // 차트 데이터 변환
   const chartData = useMemo(() => {
     if (data.length === 0) return [];
 
-    // Rebase 모드: 시작일 대비 수익률로 변환
     if (isRebaseMode && data.length > 0) {
       const basePrice = data[0].close;
-      const mainData = data.map((d) => ({
+      return data.map((d) => ({
         date: d.date,
-        [ticker.code]: ((d.close - basePrice) / basePrice) * 100,
+        value: ((d.close - basePrice) / basePrice) * 100,
       }));
-
-      // 비교 종목 데이터 병합
-      if (comparisonData.length > 0) {
-        return mainData.map((point) => {
-          const result: Record<string, number | string> = { ...point };
-          comparisonData.forEach(({ ticker: t, data: tData }) => {
-            const matchingPoint = tData.find((d) => d.date === point.date);
-            if (matchingPoint && tData.length > 0) {
-              const tBasePrice = tData[0].close;
-              result[t.code] =
-                ((matchingPoint.close - tBasePrice) / tBasePrice) * 100;
-            }
-          });
-          return result;
-        });
-      }
-
-      return mainData;
     }
 
-    // 일반 모드: 종가 그대로 사용
     return data.map((d) => ({
       date: d.date,
-      [ticker.code]: d.close,
+      value: d.close,
     }));
-  }, [data, comparisonData, ticker.code, isRebaseMode]);
+  }, [data, isRebaseMode]);
 
-  // X축 날짜 포맷팅
+  const trend = useMemo(() => {
+    if (chartData.length < 2) return 'unchanged';
+    const first = chartData[0].value;
+    const last = chartData[chartData.length - 1].value;
+    if (last > first) return 'up';
+    if (last < first) return 'down';
+    return 'unchanged';
+  }, [chartData]);
+
+  const chartColor = useMemo(() => {
+    const stockPalette = theme.palette.stock as { up: string; down: string; unchanged: string } | undefined;
+    switch (trend) {
+      case 'up':
+        return stockPalette?.up || '#00C805';
+      case 'down':
+        return stockPalette?.down || '#FF5000';
+      default:
+        return stockPalette?.unchanged || '#a3a3a3';
+    }
+  }, [trend, theme.palette.stock]);
+
   const formatXAxis = (dateStr: string) => {
     return dayjs(dateStr).format('MM/DD');
   };
 
-  // Y축 값 포맷팅
   const formatYAxis = (value: number) => {
     if (isRebaseMode) {
-      return `${value.toFixed(0)}%`;
+      return value.toFixed(0) + '%';
     }
     if (value >= 10000) {
-      return `${(value / 10000).toFixed(0)}만`;
+      return (value / 10000).toFixed(0) + '\uB9CC';
     }
     return value.toLocaleString();
   };
 
-  // 툴팁 포맷팅
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || payload.length === 0) return null;
 
@@ -107,42 +94,28 @@ export function StockLineChart({
           borderColor: 'divider',
           borderRadius: 1,
           p: 1.5,
-          boxShadow: 2,
         }}
       >
         <Typography variant="caption" color="text.secondary" display="block">
           {dayjs(label).format('YYYY-MM-DD')}
         </Typography>
-        {payload.map((entry: any, index: number) => {
-          const tickerInfo =
-            [ticker, ...comparisonData.map((c) => c.ticker)].find(
-              (t) => t.code === entry.dataKey
-            ) || ticker;
-
-          return (
-            <Box key={index} sx={{ mt: 0.5 }}>
-              <Typography
-                variant="body2"
-                fontWeight={600}
-                sx={{ color: entry.color }}
-              >
-                {tickerInfo.name}:{' '}
-                {isRebaseMode
-                  ? `${entry.value.toFixed(2)}%`
-                  : `${entry.value.toLocaleString()}원`}
-              </Typography>
-            </Box>
-          );
-        })}
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          sx={{ color: chartColor, mt: 0.5 }}
+        >
+          {isRebaseMode
+            ? payload[0].value.toFixed(2) + '%'
+            : '\u20A9' + payload[0].value.toLocaleString()}
+        </Typography>
       </Box>
     );
   };
 
   if (isLoading) {
     return (
-      <Box sx={{ height: 300, p: 2 }}>
-        <Skeleton variant="text" width={150} height={24} sx={{ mb: 2 }} />
-        <Skeleton variant="rectangular" height={250} />
+      <Box sx={{ height: 250, p: 2 }}>
+        <Skeleton variant="rectangular" height={220} sx={{ bgcolor: 'rgba(255,255,255,0.05)' }} />
       </Box>
     );
   }
@@ -151,42 +124,48 @@ export function StockLineChart({
     return (
       <Box
         sx={{
-          height: 300,
+          height: 250,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Typography color="text.secondary">데이터가 없습니다</Typography>
+        <Typography color="text.secondary">{'\uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4'}</Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ width: '100%', height: 300 }}>
+    <Box sx={{ width: '100%', height: 250 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
+        <AreaChart
           data={chartData}
           margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+          <defs>
+            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={chartColor} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <XAxis
             dataKey="date"
             tickFormatter={formatXAxis}
-            tick={{ fontSize: 11, fill: theme.palette.text.secondary }}
+            tick={{ fontSize: 10, fill: theme.palette.text.secondary }}
             tickLine={false}
-            axisLine={{ stroke: theme.palette.divider }}
+            axisLine={false}
+            interval="preserveStartEnd"
           />
           <YAxis
             tickFormatter={formatYAxis}
-            tick={{ fontSize: 11, fill: theme.palette.text.secondary }}
+            tick={{ fontSize: 10, fill: theme.palette.text.secondary }}
             tickLine={false}
             axisLine={false}
-            width={50}
+            width={45}
+            domain={['auto', 'auto']}
           />
           <Tooltip content={<CustomTooltip />} />
 
-          {/* Rebase 모드에서 0% 기준선 표시 */}
           {isRebaseMode && (
             <ReferenceLine
               y={0}
@@ -195,29 +174,16 @@ export function StockLineChart({
             />
           )}
 
-          {/* 메인 종목 라인 */}
-          <Line
+          <Area
             type="monotone"
-            dataKey={ticker.code}
-            stroke={CHART_COLORS[0]}
+            dataKey="value"
+            stroke={chartColor}
             strokeWidth={2}
+            fill="url(#chartGradient)"
             dot={false}
-            activeDot={{ r: 6 }}
+            activeDot={{ r: 5, fill: chartColor }}
           />
-
-          {/* 비교 종목 라인들 */}
-          {comparisonData.map(({ ticker: t }, index) => (
-            <Line
-              key={t.code}
-              type="monotone"
-              dataKey={t.code}
-              stroke={CHART_COLORS[(index + 1) % CHART_COLORS.length]}
-              strokeWidth={1.5}
-              dot={false}
-              activeDot={{ r: 5 }}
-            />
-          ))}
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </Box>
   );

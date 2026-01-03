@@ -3,28 +3,27 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import InsightsIcon from '@mui/icons-material/Insights';
+import NewspaperIcon from '@mui/icons-material/Newspaper';
 import SettingsIcon from '@mui/icons-material/Settings';
 
-// 탭 설정
 const TABS = [
   {
-    label: '시장',
+    label: '\uC2DC\uC7A5',
     icon: <ShowChartIcon />,
     path: '/market',
     disabled: false,
   },
   {
-    label: '분석',
-    icon: <InsightsIcon />,
-    path: '/analysis',
-    disabled: true, // Coming Soon
+    label: '\uB274\uC2A4',
+    icon: <NewspaperIcon />,
+    path: '/news',
+    disabled: true,
   },
   {
-    label: '설정',
+    label: '\uC124\uC815',
     icon: <SettingsIcon />,
     path: '/settings',
-    disabled: true, // Coming Soon
+    disabled: true,
   },
 ];
 
@@ -32,7 +31,6 @@ export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // 현재 경로에 해당하는 탭 인덱스 찾기
   const currentTabIndex = TABS.findIndex((tab) =>
     pathname?.startsWith(tab.path)
   );
@@ -50,13 +48,18 @@ export function BottomNav() {
       sx={{
         position: 'fixed',
         bottom: 0,
-        left: 0,
-        right: 0,
+        maxWidth: 480,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        right: 'auto',
+        width: '100%',
         zIndex: 1100,
-        // iOS Safe Area 대응
         pb: 'env(safe-area-inset-bottom)',
+        bgcolor: 'background.default',
+        borderTop: '1px solid',
+        borderColor: 'divider',
       }}
-      elevation={3}
+      elevation={0}
     >
       <BottomNavigation
         value={value}
@@ -64,15 +67,18 @@ export function BottomNav() {
         showLabels
         sx={{
           height: 64,
+          bgcolor: 'transparent',
           '& .MuiBottomNavigationAction-root': {
             minWidth: 60,
             py: 1,
+            color: 'text.secondary',
           },
           '& .MuiBottomNavigationAction-label': {
             fontSize: '0.75rem',
             mt: 0.5,
           },
           '& .Mui-selected': {
+            color: 'primary.main',
             '& .MuiBottomNavigationAction-label': {
               fontSize: '0.75rem',
             },
@@ -86,10 +92,7 @@ export function BottomNav() {
             icon={tab.icon}
             disabled={tab.disabled}
             sx={{
-              opacity: tab.disabled ? 0.5 : 1,
-              '&.Mui-selected': {
-                color: 'primary.main',
-              },
+              opacity: tab.disabled ? 0.4 : 1,
             }}
           />
         ))}

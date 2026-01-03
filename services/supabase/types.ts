@@ -109,6 +109,30 @@ export type Database = {
           content_hash?: string;
         };
       };
+      api_tokens: {
+        Row: {
+          id: string;
+          provider: string;
+          access_token: string;
+          expires_at: string;
+          issued_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider: string;
+          access_token: string;
+          expires_at: string;
+          issued_at: string;
+          created_at?: string;
+        };
+        Update: {
+          provider?: string;
+          access_token?: string;
+          expires_at?: string;
+          issued_at?: string;
+        };
+      };
     };
   };
 };
@@ -120,3 +144,5 @@ export type MarketData = Database['public']['Tables']['market_data']['Row'];
 export type MarketDataInsert = Database['public']['Tables']['market_data']['Insert'];
 export type NewsArticle = Database['public']['Tables']['news_articles']['Row'];
 export type NewsArticleInsert = Database['public']['Tables']['news_articles']['Insert'];
+export type ApiToken = Database['public']['Tables']['api_tokens']['Row'];
+export type ApiTokenInsert = Database['public']['Tables']['api_tokens']['Insert'];

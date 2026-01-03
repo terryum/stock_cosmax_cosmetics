@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Chip } from '@mui/material';
+import { Box, ButtonBase, Typography } from '@mui/material';
 import { useTimeRangeStore } from '@/stores';
 import { TIME_RANGES } from '@/lib/constants';
 import { TimeRangeValue } from '@/types';
@@ -10,8 +10,6 @@ export function TimeRangeSelector() {
 
   const handleSelect = (value: TimeRangeValue) => {
     if (value === 'custom') {
-      // TODO: 날짜 선택 모달 열기
-      // 현재는 기본 동작만 구현
       return;
     }
     setTimeRange(value);
@@ -21,29 +19,49 @@ export function TimeRangeSelector() {
     <Box
       sx={{
         display: 'flex',
-        gap: 0.75,
-        flexWrap: 'wrap',
         justifyContent: 'center',
-        mb: 2,
+        gap: 0,
+        py: 1.5,
+        borderTop: '1px solid',
+        borderColor: 'divider',
       }}
     >
-      {TIME_RANGES.map((range) => (
-        <Chip
-          key={range.value}
-          label={range.label}
-          size="small"
-          variant={selected === range.value ? 'filled' : 'outlined'}
-          color={selected === range.value ? 'primary' : 'default'}
-          onClick={() => handleSelect(range.value)}
-          sx={{
-            fontWeight: selected === range.value ? 600 : 400,
-            transition: 'all 0.2s',
-            '&:hover': {
-              bgcolor: selected === range.value ? 'primary.main' : 'action.hover',
-            },
-          }}
-        />
-      ))}
+      {TIME_RANGES.filter(r => r.value !== 'custom').map((range) => {
+        const isSelected = selected === range.value;
+        return (
+          <ButtonBase
+            key={range.value}
+            onClick={() => handleSelect(range.value)}
+            sx={{
+              px: 2,
+              py: 1,
+              position: 'relative',
+              '&::after': isSelected ? {
+                content: '""',
+                position: 'absolute',
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '80%',
+                height: 2,
+                bgcolor: 'primary.main',
+                borderRadius: 1,
+              } : {},
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: isSelected ? 600 : 400,
+                color: isSelected ? 'primary.main' : 'text.secondary',
+                transition: 'color 0.2s',
+              }}
+            >
+              {range.label}
+            </Typography>
+          </ButtonBase>
+        );
+      })}
     </Box>
   );
 }

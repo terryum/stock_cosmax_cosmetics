@@ -1,99 +1,149 @@
 'use client';
 
-import { Box, Container, Typography, Divider, Paper } from '@mui/material';
-import { TickerGridContainer } from '@/components/stocks';
-import { TimeRangeSelector, StockChartContainer, ChartLegend } from '@/components/charts';
-import { NewsFeed } from '@/components/news';
+import { useMemo } from 'react';
+import { Box, Typography, Divider, Button } from '@mui/material';
+import { MainPriceDisplay, Watchlist } from '@/components/stocks';
+import { NewsList } from '@/components/news';
+import { TimeRangeSelector, StockChartContainer } from '@/components/charts';
 import { useTickerStore } from '@/stores';
+import { useStockPrice, useMultipleStockPrices, useMultipleStockHistory } from '@/hooks/useStockPrice';
+import { TICKERS, isIndexOrETF } from '@/lib/constants';
+import { TickerPrice, DailyPrice } from '@/types';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+
+// 7일 전 날짜 계산
+function getSevenDaysAgo(): string {
+  const date = new Date();
+  date.setDate(date.getDate() - 7);
+  return date.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+function getToday(): string {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
+}
 
 export default function MarketPage() {
-  const { mainTicker, selectedTickers, isMultiSelectMode } = useTickerStore();
+  const { mainTicker } = useTickerStore();
+  const isIndex = isIndexOrETF(mainTicker);
+  const { data: priceResponse, isLoading: isPriceLoading } = useStockPrice(mainTicker.code, isIndex);
+
+  // 모든 종목 데이터 조회
+  const tickerConfigs = useMemo(() =>
+    TICKERS.map(t => ({ code: t.code, isIndex: isIndexOrETF(t) })),
+    []
+  );
+
+  const { data: allPricesMap, isLoading: isAllPricesLoading } = useMultipleStockPrices(tickerConfigs);
+  const { data: allHistoryMap, isLoading: isHistoryLoading } = useMultipleStockHistory(
+    tickerConfigs,
+    { startDate: getSevenDaysAgo(), endDate: getToday(), period: 'D' }
+  );
+
+  // Map을 Record로 변환
+  const watchlistPriceData = useMemo(() => {
+    if (!allPricesMap) return undefined;
+    const record: Record<string, TickerPrice> = {};
+    allPricesMap.forEach((price, code) => {
+      record[code] = {
+        code: price.code,
+        name: price.name,
+        currentPrice: price.currentPrice,
+        changePrice: price.changePrice,
+        changeRate: price.changeRate,
+        volume: price.volume,
+        high: price.high,
+        low: price.low,
+        open: price.open,
+        prevClose: price.prevClose,
+        timestamp: price.timestamp,
+      };
+    });
+    return record;
+  }, [allPricesMap]);
+
+  const watchlistSparklineData = useMemo(() => {
+    if (!allHistoryMap) return undefined;
+    const record: Record<string, DailyPrice[]> = {};
+    allHistoryMap.forEach((history, code) => {
+      record[code] = history.map(h => ({
+        date: h.date,
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        volume: h.volume,
+        changeRate: h.changeRate,
+      }));
+    });
+    return record;
+  }, [allHistoryMap]);
+
+  const priceData = priceResponse?.data ? {
+    code: priceResponse.data.code,
+    name: priceResponse.data.name,
+    currentPrice: priceResponse.data.currentPrice,
+    changePrice: priceResponse.data.changePrice,
+    changeRate: priceResponse.data.changeRate,
+    volume: priceResponse.data.volume,
+    high: priceResponse.data.high,
+    low: priceResponse.data.low,
+    open: priceResponse.data.open,
+    prevClose: priceResponse.data.prevClose,
+    timestamp: priceResponse.data.timestamp,
+  } : undefined;
 
   return (
-    <Container maxWidth="lg" sx={{ py: 2 }}>
-      {/* 페이지 헤더 */}
-      <Box sx={{ mb: 3 }}>
-        <Typography
-          variant="h5"
-          component="h2"
-          fontWeight={600}
-          color="text.primary"
-        >
-          시장 동향
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-          코스맥스 및 화장품 산업 주가/뉴스
-        </Typography>
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100%' }}>
+      {/* Main Price Display */}
+      <MainPriceDisplay
+        tickerName={mainTicker.name}
+        priceData={priceData}
+        isLoading={isPriceLoading}
+      />
+
+      {/* Main Chart */}
+      <Box sx={{ px: 1 }}>
+        <StockChartContainer />
       </Box>
 
-      <Divider sx={{ mb: 3 }} />
+      {/* Time Range Selector */}
+      <TimeRangeSelector />
 
-      {/* 차트 섹션 */}
-      <Paper
-        elevation={0}
+      <Divider />
+
+      {/* Watchlist Section */}
+      <Watchlist
+        priceData={watchlistPriceData}
+        sparklineData={watchlistSparklineData}
+        isLoading={isAllPricesLoading || isHistoryLoading}
+      />
+
+      <Divider />
+
+      {/* News Section Header */}
+      <Box
         sx={{
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          p: 3,
-          mb: 3,
-          border: 1,
-          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+          py: 1.5,
         }}
       >
-        {/* 현재 선택된 종목 표시 */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" fontWeight={600}>
-            {mainTicker.name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {mainTicker.market} · {mainTicker.code}
-          </Typography>
-        </Box>
+        <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+          {'\uB274\uC2A4'}
+        </Typography>
+        <Button
+          size="small"
+          endIcon={<ChevronRightIcon />}
+          sx={{ color: 'text.secondary' }}
+        >
+          {'\uB354\uBCF4\uAE30'}
+        </Button>
+      </Box>
 
-        {/* 기간 선택기 */}
-        <TimeRangeSelector />
-
-        {/* 주가 차트 */}
-        <StockChartContainer />
-
-        {/* 다중 선택 시 레전드 */}
-        {isMultiSelectMode && selectedTickers.length > 0 && (
-          <ChartLegend
-            mainTicker={mainTicker}
-            comparisonTickers={selectedTickers}
-          />
-        )}
-      </Paper>
-
-      {/* 종목 그리드 섹션 */}
-      <Paper
-        elevation={0}
-        sx={{
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          p: 3,
-          mb: 3,
-          border: 1,
-          borderColor: 'divider',
-        }}
-      >
-        <TickerGridContainer />
-      </Paper>
-
-      {/* 뉴스 섹션 */}
-      <Paper
-        elevation={0}
-        sx={{
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          p: 3,
-          mb: 3,
-          border: 1,
-          borderColor: 'divider',
-        }}
-      >
-        <NewsFeed />
-      </Paper>
-    </Container>
+      {/* News List */}
+      <NewsList limit={5} />
+    </Box>
   );
 }

@@ -2,60 +2,61 @@
 
 import { createTheme } from '@mui/material/styles';
 
-// 코스맥스 브랜드 컬러 기반 팔레트
+// Robinhood 스타일 다크 테마 팔레트
 const palette = {
   primary: {
-    main: '#1565c0', // 진한 파랑 (네이비 블루)
-    light: '#5e92f3',
-    dark: '#003c8f',
-    contrastText: '#ffffff',
+    main: '#00C805', // Robinhood 녹색
+    light: '#33d337',
+    dark: '#009603',
+    contrastText: '#000000',
   },
   secondary: {
-    main: '#00897b', // 틸 (화장품 산업 연상 컬러)
-    light: '#4ebaaa',
-    dark: '#005b4f',
-    contrastText: '#ffffff',
+    main: '#5ac53b', // 연한 녹색
+    light: '#7bd362',
+    dark: '#3e8929',
+    contrastText: '#000000',
   },
   error: {
-    main: '#d32f2f',
-    light: '#ef5350',
-    dark: '#c62828',
+    main: '#FF5000', // Robinhood 빨강 (하락)
+    light: '#ff7333',
+    dark: '#cc4000',
   },
   warning: {
-    main: '#ed6c02',
-    light: '#ff9800',
-    dark: '#e65100',
+    main: '#FFB800',
+    light: '#ffc633',
+    dark: '#cc9300',
   },
   info: {
-    main: '#0288d1',
-    light: '#03a9f4',
-    dark: '#01579b',
+    main: '#00BFFF',
+    light: '#33ccff',
+    dark: '#0099cc',
   },
   success: {
-    main: '#2e7d32',
-    light: '#4caf50',
-    dark: '#1b5e20',
+    main: '#00C805',
+    light: '#33d337',
+    dark: '#009603',
   },
   background: {
-    default: '#fafafa',
-    paper: '#ffffff',
+    default: '#000000', // 완전 검정 배경
+    paper: '#1a1a1a',   // 카드 배경
   },
   text: {
-    primary: '#212121',
-    secondary: '#757575',
+    primary: '#ffffff',
+    secondary: '#a3a3a3',
   },
-  // 주식 등락 컬러 (한국 시장 기준: 상승 빨강, 하락 파랑)
+  divider: '#2a2a2a',
+  // 주식 등락 컬러 (Robinhood 스타일: 상승 녹색, 하락 빨강)
   stock: {
-    up: '#d32f2f', // 상승 (빨강)
-    down: '#1565c0', // 하락 (파랑)
-    unchanged: '#757575', // 보합 (회색)
+    up: '#00C805',      // 상승 (녹색)
+    down: '#FF5000',    // 하락 (빨강)
+    unchanged: '#a3a3a3', // 보합 (회색)
   },
 };
 
 // MUI 테마 생성
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: palette.primary,
     secondary: palette.secondary,
     error: palette.error,
@@ -64,6 +65,7 @@ const theme = createTheme({
     success: palette.success,
     background: palette.background,
     text: palette.text,
+    divider: palette.divider,
   },
   typography: {
     fontFamily: [
@@ -76,11 +78,11 @@ const theme = createTheme({
       'sans-serif',
     ].join(','),
     h1: {
-      fontSize: '2rem',
+      fontSize: '2.5rem',
       fontWeight: 700,
     },
     h2: {
-      fontSize: '1.75rem',
+      fontSize: '2rem',
       fontWeight: 600,
     },
     h3: {
@@ -116,20 +118,20 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          scrollbarColor: '#c1c1c1 #f1f1f1',
+          scrollbarColor: '#333 #1a1a1a',
           '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
             width: 8,
             height: 8,
           },
           '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
             borderRadius: 4,
-            backgroundColor: '#c1c1c1',
+            backgroundColor: '#333',
           },
           '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
-            backgroundColor: '#a1a1a1',
+            backgroundColor: '#444',
           },
           '&::-webkit-scrollbar-track, & *::-webkit-scrollbar-track': {
-            backgroundColor: '#f1f1f1',
+            backgroundColor: '#1a1a1a',
           },
         },
       },
@@ -137,7 +139,7 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          textTransform: 'none', // 버튼 대문자 변환 비활성화
+          textTransform: 'none',
           borderRadius: 8,
         },
       },
@@ -146,7 +148,15 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+          boxShadow: 'none',
+          backgroundColor: palette.background.paper,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
         },
       },
     },
@@ -161,7 +171,8 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           height: 64,
-          borderTop: '1px solid #e0e0e0',
+          backgroundColor: palette.background.default,
+          borderTop: '1px solid #2a2a2a',
         },
       },
     },
@@ -170,8 +181,10 @@ const theme = createTheme({
         root: {
           minWidth: 60,
           padding: '8px 12px',
+          color: palette.text.secondary,
           '&.Mui-selected': {
             paddingTop: 8,
+            color: palette.primary.main,
           },
         },
         label: {
@@ -185,7 +198,23 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          boxShadow: 'none',
+          backgroundColor: palette.background.default,
+          borderBottom: '1px solid #2a2a2a',
+        },
+      },
+    },
+    MuiListItem: {
+      styleOverrides: {
+        root: {
+          borderBottom: '1px solid #2a2a2a',
+        },
+      },
+    },
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          borderColor: '#2a2a2a',
         },
       },
     },

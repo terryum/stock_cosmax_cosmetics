@@ -6,12 +6,16 @@ export interface KisTokenResponse {
   token_type: string;
   expires_in: number;
   access_token_token_expired: string; // YYYY-MM-DD HH:mm:ss
+  // 에러 응답 필드
+  msg_cd?: string;
+  msg1?: string;
 }
 
 // 토큰 캐시 정보
 export interface CachedToken {
   accessToken: string;
   expiresAt: Date;
+  issuedAt: Date;
 }
 
 // 공통 API 응답 헤더
